@@ -3,346 +3,567 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>🦋 구름 릴레이</title>
+<title>🌈 오둥이 구름 받기</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#B8E4F9;
-  font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+html,body{width:100%;height:100%;overflow:hidden;
+  font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:#87CEEB}
 
-/* ── 시작 화면 ── */
-#startScreen{
-  position:fixed;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#87CEEB,#D4F1FF 50%,#FFF5FA);
-  z-index:10;
+/* ── 가로모드 경고 (모바일만) ── */
+#rotateMsg{
+  display:none;position:fixed;inset:0;background:#1a1a2e;
+  color:#fff;font-size:1.4rem;font-weight:700;
+  align-items:center;justify-content:center;flex-direction:column;
+  gap:16px;z-index:999;text-align:center;padding:20px;
 }
-.logo{font-size:2rem;font-weight:900;color:#3A7BD5;text-align:center;
-  line-height:1.4;margin-bottom:6px;
-  text-shadow:0 2px 8px rgba(58,123,213,.2)}
-.logo-sub{font-size:.95rem;color:#7AAACC;margin-bottom:24px}
-.cast-row{font-size:3.5rem;letter-spacing:8px;margin-bottom:6px}
-.cast-names{font-size:.85rem;color:#888;letter-spacing:3px;margin-bottom:28px}
-.rule-box{
-  background:rgba(255,255,255,.8);border-radius:20px;
-  padding:18px 24px;width:88%;max-width:320px;
-  box-shadow:0 4px 20px rgba(0,0,0,.1);margin-bottom:28px;
-  text-align:center;
+@media screen and (orientation:landscape) and (max-height:500px){
+  #rotateMsg{display:flex}
 }
-.rule-box p{font-size:.9rem;color:#555;line-height:2}
-.start-btn{
+
+/* ── 공통 화면 ── */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center}
+.screen.show{display:flex}
+
+/* ── 선택 화면 ── */
+#selectScreen{
+  background:linear-gradient(180deg,#87CEEB,#D4F1FF 60%,#FFF0FA);
+}
+.sel-title{font-size:1.6rem;font-weight:900;color:#3A7BD5;
+  text-align:center;line-height:1.5;margin-bottom:6px}
+.sel-sub{font-size:.9rem;color:#7AAACC;margin-bottom:22px}
+.char-cards{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+  padding:0 12px;margin-bottom:24px}
+.char-card{
+  background:rgba(255,255,255,.85);border-radius:22px;
+  padding:18px 16px;min-width:90px;max-width:110px;
+  box-shadow:0 4px 20px rgba(0,0,0,.12);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
+  border:3px solid transparent;
+}
+.char-card:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(0,0,0,.18)}
+.char-card.selected{border-color:#6EC6F5;background:rgba(110,198,245,.15)}
+.char-card .icon{font-size:2.8rem}
+.char-card .cname{font-size:1rem;font-weight:800;color:#333}
+.char-card .ctrait{font-size:.72rem;color:#888;text-align:center;line-height:1.4}
+.score-rule{
+  background:rgba(255,255,255,.8);border-radius:16px;
+  padding:12px 20px;margin-bottom:22px;text-align:center;
+}
+.score-rule p{font-size:.88rem;color:#555;line-height:1.9}
+.go-btn{
   background:linear-gradient(135deg,#6EC6F5,#A78BFA);
   color:#fff;border:none;border-radius:50px;
-  padding:18px 60px;font-size:1.25rem;font-weight:900;
-  box-shadow:0 6px 24px rgba(110,198,245,.5);cursor:pointer;
-  animation:pulse 1.8s ease-in-out infinite;
+  padding:16px 56px;font-size:1.2rem;font-weight:900;
+  box-shadow:0 6px 24px rgba(110,198,245,.45);cursor:pointer;
+  opacity:.4;pointer-events:none;transition:opacity .2s;
 }
-.start-btn:active{transform:scale(.95)}
-@keyframes pulse{
-  0%,100%{box-shadow:0 6px 24px rgba(110,198,245,.5)}
-  50%{box-shadow:0 6px 36px rgba(167,139,250,.7)}
-}
+.go-btn.active{opacity:1;pointer-events:all}
+.go-btn.active:active{transform:scale(.96)}
 
 /* ── 게임 화면 ── */
-#gameScreen{
-  position:fixed;inset:0;display:none;
-  background:linear-gradient(180deg,#87CEEB,#D4F1FF 50%,#EAF9EA);
-}
-canvas{position:absolute;inset:0;width:100%;height:100%}
-
-/* HUD */
-.hud{
-  position:absolute;top:0;left:0;right:0;
-  display:flex;justify-content:space-between;align-items:center;
-  padding:14px 20px;z-index:5;
-  background:rgba(255,255,255,.15);
-}
-.hud-score{
-  background:rgba(255,255,255,.85);border-radius:20px;
-  padding:8px 20px;font-size:1.3rem;font-weight:900;color:#3A7BD5;
-}
-.hud-timer{
-  background:rgba(255,255,255,.85);border-radius:20px;
-  padding:8px 20px;font-size:1.3rem;font-weight:900;color:#E07070;
-  min-width:72px;text-align:center;
-}
-
-/* 캐릭터 바 */
-.char-bar{
-  position:absolute;bottom:0;left:0;right:0;height:80px;
-  background:rgba(255,255,255,.75);
-  display:flex;justify-content:space-around;align-items:center;
-  z-index:5;border-top:2px solid rgba(255,255,255,.9);
-  backdrop-filter:blur(4px);
-}
-.cu{display:flex;flex-direction:column;align-items:center;gap:2px}
-.ce{font-size:2.4rem;display:inline-block;transition:transform .1s}
-.ce.pop{animation:pop .3s ease}
-.cl{font-size:.72rem;color:#666;font-weight:700}
-@keyframes pop{0%{transform:scale(1) translateY(0)}40%{transform:scale(1.3) translateY(-10px)}100%{transform:scale(1) translateY(0)}}
-
-/* 파티클 */
-.pt{
-  position:fixed;font-size:1.4rem;font-weight:900;
-  pointer-events:none;z-index:20;
-  animation:ptUp .75s ease-out forwards;
-}
-@keyframes ptUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-70px) scale(.5)}}
+#gameScreen{background:#87CEEB;padding:0}
+#gameCanvas{display:block;touch-action:none}
 
 /* ── 결과 화면 ── */
 #resultScreen{
-  position:fixed;inset:0;display:none;flex-direction:column;
-  align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#87CEEB,#D4F1FF 50%,#FFF5FA);
-  z-index:10;
+  background:linear-gradient(180deg,#87CEEB,#D4F1FF 60%,#FFF0FA);
+  gap:10px;padding:24px;
 }
-.r-chars{font-size:3rem;letter-spacing:6px;margin-bottom:8px}
-.r-title{font-size:1.9rem;font-weight:900;color:#3A7BD5;margin-bottom:6px}
-.r-score{
-  font-size:4.5rem;font-weight:900;
-  background:linear-gradient(135deg,#6EC6F5,#A78BFA);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+.res-title{font-size:1.8rem;font-weight:900;color:#3A7BD5}
+.podium{display:flex;align-items:flex-end;gap:10px;margin:8px 0 16px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:4px;
+  border-radius:14px 14px 0 0;padding:12px 18px;min-width:80px}
+.pod.p1{background:linear-gradient(180deg,#FFE066,#FFC400);height:120px;justify-content:flex-end}
+.pod.p2{background:linear-gradient(180deg,#E0E0E0,#BDBDBD);height:90px;justify-content:flex-end}
+.pod.p3{background:linear-gradient(180deg,#FFCC99,#E09060);height:70px;justify-content:flex-end}
+.pod .picon{font-size:2rem}
+.pod .pname{font-size:.8rem;font-weight:700;color:#333}
+.pod .pscore{font-size:1.1rem;font-weight:900;color:#333}
+.pod .prank{font-size:1.3rem;font-weight:900}
+.my-result{
+  background:rgba(255,255,255,.8);border-radius:16px;
+  padding:14px 24px;text-align:center;width:90%;max-width:320px;
 }
-.r-unit{font-size:1rem;color:#888;margin-bottom:16px}
-.rank{
-  font-size:1.25rem;font-weight:900;padding:8px 28px;
-  border-radius:30px;margin-bottom:16px;
-}
-.rs{background:#FFD700;color:#7A5900}
-.ra{background:#C0C0C0;color:#444}
-.rb{background:#CD7F32;color:#fff}
-.rc{background:#E8E8E8;color:#777}
-.r-msg{
-  font-size:.95rem;color:#666;text-align:center;line-height:1.8;
-  background:rgba(255,255,255,.75);border-radius:16px;
-  padding:14px 22px;width:88%;max-width:320px;margin-bottom:28px;
-}
+.my-result p{font-size:.95rem;color:#555;line-height:1.8}
 .retry-btn{
   background:linear-gradient(135deg,#6EC6F5,#A78BFA);
   color:#fff;border:none;border-radius:50px;
-  padding:16px 52px;font-size:1.1rem;font-weight:800;
-  box-shadow:0 6px 20px rgba(110,198,245,.4);cursor:pointer;
+  padding:14px 48px;font-size:1.1rem;font-weight:800;
+  box-shadow:0 4px 18px rgba(110,198,245,.4);cursor:pointer;
+  margin-top:4px;
 }
 .retry-btn:active{transform:scale(.95)}
 </style>
 </head>
 <body>
 
-<!-- 시작 화면 -->
-<div id="startScreen">
-  <div class="logo">🦋 나비귀·처진귀<br>접힌귀 구름 릴레이</div>
-  <div class="logo-sub">오둥이 팀플레이 게임</div>
-  <div class="cast-row">🦋🐩🐱</div>
-  <div class="cast-names">열무 · 배추 · 까미</div>
-  <div class="rule-box">
-    <p>
-      🌈 무지개 구름 <b>+3점</b><br>
-      ☁️ 솜구름 <b>+1점</b><br>
-      🌧️ 비구름 <b>–2점</b><br>
-      ⏱️ 30초 안에 최고 점수!
-    </p>
-  </div>
-  <button class="start-btn" id="startBtn">🎮 게임 시작!</button>
+<!-- 가로모드 경고 -->
+<div id="rotateMsg">
+  <div style="font-size:3rem">📱</div>
+  <div>세로로 돌려주세요!</div>
 </div>
 
-<!-- 게임 화면 -->
-<div id="gameScreen">
-  <canvas id="c"></canvas>
-  <div class="hud">
-    <div class="hud-score">⭐ <span id="sv">0</span>점</div>
-    <div class="hud-timer">⏱ <span id="tv">30</span></div>
+<!-- 캐릭터 선택 -->
+<div class="screen show" id="selectScreen">
+  <div class="sel-title">🌈 오둥이 구름 받기</div>
+  <div class="sel-sub">내 캐릭터를 선택하세요!</div>
+  <div class="char-cards">
+    <div class="char-card" onclick="selectChar(0)" id="card0">
+      <div class="icon">🦋</div>
+      <div class="cname">열무</div>
+      <div class="ctrait">나비귀<br>빠른 이동</div>
+    </div>
+    <div class="char-card" onclick="selectChar(1)" id="card1">
+      <div class="icon">🐩</div>
+      <div class="cname">배추</div>
+      <div class="ctrait">파마머리<br>넓은 범위</div>
+    </div>
+    <div class="char-card" onclick="selectChar(2)" id="card2">
+      <div class="icon">🐱</div>
+      <div class="cname">까미</div>
+      <div class="ctrait">꺾인 꼬리<br>비구름 튕김</div>
+    </div>
   </div>
-  <div class="char-bar">
-    <div class="cu"><span class="ce" id="cY">🦋</span><span class="cl">열무</span></div>
-    <div class="cu"><span class="ce" id="cB">🐩</span><span class="cl">배추</span></div>
-    <div class="cu"><span class="ce" id="cK">🐱</span><span class="cl">까미</span></div>
+  <div class="score-rule">
+    <p>🌈 무지개 <b>+5점</b> &nbsp; ☀️ 햇님 <b>+4점</b><br>
+       ☁️ 구름 <b>+3점</b> &nbsp; 🌧️ 비구름 <b>–3점</b></p>
   </div>
+  <button class="go-btn" id="goBtn" onclick="startGame()">🎮 게임 시작!</button>
 </div>
 
-<!-- 결과 화면 -->
-<div id="resultScreen">
-  <div class="r-chars">🦋🐩🐱</div>
-  <div class="r-title">릴레이 완료!</div>
-  <div class="r-score" id="rs">0</div>
-  <div class="r-unit">점</div>
-  <div class="rank" id="rk"></div>
-  <div class="r-msg" id="rm"></div>
-  <button class="retry-btn" onclick="reset()">🔄 다시 하기</button>
+<!-- 게임 -->
+<div class="screen" id="gameScreen">
+  <canvas id="gameCanvas"></canvas>
+</div>
+
+<!-- 결과 -->
+<div class="screen" id="resultScreen">
+  <div class="res-title">🏆 최종 순위</div>
+  <div class="podium" id="podium"></div>
+  <div class="my-result" id="myResult"></div>
+  <button class="retry-btn" onclick="goSelect()">🔄 다시 하기</button>
 </div>
 
 <script>
-const TYPES=[
-  {e:'🌈',pt:3, spd:1.2,r:.12},
-  {e:'☁️', pt:1, spd:2.0,r:.55},
-  {e:'⛅', pt:1, spd:2.6,r:.20},
-  {e:'🌧️',pt:-2,spd:1.7,r:.13},
+// ── 상수 ──────────────────────────────────────────────────────
+const ITEM_TYPES = [
+  {e:'🌈', pts:5,  prob:.12, label:'무지개'},
+  {e:'☀️',  pts:4,  prob:.20, label:'햇님'},
+  {e:'☁️',  pts:3,  prob:.48, label:'구름'},
+  {e:'🌧️', pts:-3, prob:.20, label:'비구름'},
 ];
-// 누적 확률
-const CUM=TYPES.reduce((a,t,i)=>{a.push((a[i-1]||0)+t.r);return a},[]);
+const PROBS = ITEM_TYPES.reduce((a,t,i)=>{a.push((a[i-1]||0)+t.prob);return a},[]);
 
-let score=0,timeLeft=30,running=false;
-let clouds=[],raf=null,ticker=null;
-let W=0,H=0,BAR=80,HUD=60;
-let spawnMs=1200,spawnAcc=0,lastTs=0;
+const CHAR_DEF = [
+  {name:'열무', icon:'🦋', color:'#A8E6CF', spd:9,   catchW:55},
+  {name:'배추', icon:'🐩', color:'#FFE4A0', spd:6.5, catchW:70},
+  {name:'까미', icon:'🐱', color:'#C8B4E8', spd:7,   catchW:60},
+];
+// 까미 특수: 비구름 받아도 -1만 (꺾인꼬리로 튕김)
+// 배추 특수: 넓은 범위 (catchW 70)
+// 열무 특수: 가장 빠름
+
+const GAME_SEC = 45;
+const HUD_H    = 60;
+const CHAR_Y_OFFSET = 90; // canvas 하단에서 캐릭터까지
+const ITEM_SIZE = 42;
+const CHAR_SIZE = 52;
+const BASKET_H  = 18;
+
+// ── 상태 ─────────────────────────────────────────────────────
+let playerIdx = -1;
+let chars = [];   // {name, icon, color, x, score, spd, catchW, isPlayer, bounce, bounceT}
+let items = [];   // {x, y, vy, type, caught, miss, popAlpha, popY, popTxt, popColor}
+let particles = []; // {x, y, txt, color, vy, alpha}
+let W=0, H=0, GROUND=0;
+let running = false, timeLeft = GAME_SEC;
+let spawnTimer = 0, spawnMs = 1300;
+let raf = null, ticker = null, lastTs = 0;
 let ctx;
 
-const canvas=document.getElementById('c');
+// ── 조작 ──────────────────────────────────────────────────────
+let touchX = null;   // 현재 터치 x
+let keys = {left:false, right:false};
 
+// ── 캐릭터 선택 ───────────────────────────────────────────────
+function selectChar(idx){
+  playerIdx = idx;
+  document.querySelectorAll('.char-card').forEach((c,i)=>{
+    c.classList.toggle('selected', i===idx);
+  });
+  document.getElementById('goBtn').classList.add('active');
+}
+
+// ── 랜덤 타입 ─────────────────────────────────────────────────
 function randType(){
-  const r=Math.random();
-  return TYPES[CUM.findIndex(p=>r<=p)]||TYPES[1];
+  const r = Math.random();
+  return ITEM_TYPES[PROBS.findIndex(p=>r<=p)] || ITEM_TYPES[2];
 }
 
-function resize(){
-  W=window.innerWidth;
-  H=window.innerHeight;
-  canvas.width=W;
-  canvas.height=H;
+// ── 게임 시작 ─────────────────────────────────────────────────
+function startGame(){
+  if(playerIdx < 0) return;
+  show('gameScreen');
+
+  const canvas = document.getElementById('gameCanvas');
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width  = W;
+  canvas.height = H;
+  ctx = canvas.getContext('2d');
+  GROUND = H - CHAR_Y_OFFSET;
+
+  // 캐릭터 초기 x: 균등 분배
+  chars = CHAR_DEF.map((def, i) => ({
+    ...def,
+    x: W * (i+1) / 4,
+    score: 0,
+    isPlayer: i === playerIdx,
+    bounce: 0,
+    bounceT: 0,
+  }));
+
+  items = []; particles = [];
+  running = true; timeLeft = GAME_SEC;
+  spawnTimer = 0; spawnMs = 1300;
+  lastTs = performance.now();
+
+  // 터치
+  canvas.addEventListener('touchstart',  onTouchStart, {passive:false});
+  canvas.addEventListener('touchmove',   onTouchMove,  {passive:false});
+  canvas.addEventListener('touchend',    onTouchEnd,   {passive:false});
+  // 키보드
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup',   onKeyUp);
+
+  ticker = setInterval(()=>{
+    timeLeft--;
+    if(timeLeft <= 0) endGame();
+  }, 1000);
+
+  raf = requestAnimationFrame(loop);
 }
 
-function spawn(){
-  const t=randType();
-  const sz=44+Math.random()*12;
-  clouds.push({
-    x:sz+Math.random()*(W-sz*2),
-    y:-sz,
-    vy:t.spd*(0.85+Math.random()*.3),
-    t,sz,
-    hit:false,alpha:1
+// ── 터치 ─────────────────────────────────────────────────────
+function onTouchStart(e){ e.preventDefault(); touchX = e.touches[0].clientX; }
+function onTouchMove(e){  e.preventDefault(); touchX = e.touches[0].clientX; }
+function onTouchEnd(e){   e.preventDefault(); touchX = null; }
+function onKeyDown(e){ if(e.key==='ArrowLeft')  keys.left=true;
+                        if(e.key==='ArrowRight') keys.right=true; }
+function onKeyUp(e){   if(e.key==='ArrowLeft')  keys.left=false;
+                        if(e.key==='ArrowRight') keys.right=false; }
+
+// ── 메인 루프 ─────────────────────────────────────────────────
+function loop(ts){
+  if(!running){ return; }
+  const dt = Math.min(ts - lastTs, 60);
+  lastTs = ts;
+  const df = dt / 16.67;
+
+  // 아이템 스폰
+  spawnTimer += dt;
+  if(spawnTimer >= spawnMs){
+    spawnItem();
+    spawnTimer = 0;
+    spawnMs = Math.max(600, spawnMs - 12);
+  }
+
+  // 플레이어 이동
+  const player = chars[playerIdx];
+  if(touchX !== null){
+    // 터치: x 직접 추적
+    const dx = touchX - player.x;
+    const step = Math.min(Math.abs(dx), player.spd * df * 2.5);
+    player.x += Math.sign(dx) * step;
+  } else {
+    if(keys.left)  player.x -= player.spd * df * 1.5;
+    if(keys.right) player.x += player.spd * df * 1.5;
+  }
+  player.x = clamp(player.x, 30, W - 30);
+
+  // AI 이동
+  chars.forEach((ch, i) => {
+    if(i === playerIdx) return;
+    const target = aiTarget(ch);
+    if(target !== null){
+      const dx = target - ch.x;
+      const step = Math.min(Math.abs(dx), ch.spd * df * (0.75 + Math.random()*.25));
+      ch.x += Math.sign(dx) * step;
+    }
+    ch.x = clamp(ch.x, 30, W - 30);
+  });
+
+  // 아이템 이동 + 충돌
+  for(let i = items.length-1; i >= 0; i--){
+    const it = items[i];
+    if(it.caught){
+      it.popAlpha -= 0.04;
+      it.popY -= 1.5;
+      if(it.popAlpha <= 0) items.splice(i, 1);
+      continue;
+    }
+    it.y += it.vy * df;
+
+    // 충돌 체크 (GROUND 도달 시)
+    if(it.y >= GROUND - 10){
+      let catcher = null;
+      for(const ch of chars){
+        if(Math.abs(it.x - ch.x) <= ch.catchW){
+          catcher = ch; break;
+        }
+      }
+      if(catcher){
+        let pts = it.type.pts;
+        // 까미 특수: 비구름 -3 → -1
+        if(catcher.name === '까미' && pts < 0) pts = -1;
+        catcher.score += pts;
+        catcher.bounce = 1;
+        it.caught = true;
+        it.popAlpha = 1;
+        it.popY = GROUND - 30;
+        it.popTxt = (pts >= 0 ? '+' : '') + pts;
+        it.popColor = pts > 0 ? '#FFB800' : '#E05555';
+        addParticle(it.x, GROUND - 20, it.type.e, pts > 0 ? '#FFB800' : '#6EC6F5');
+      } else {
+        // 놓침
+        items.splice(i, 1);
+      }
+    }
+  }
+
+  // 파티클
+  particles = particles.filter(p => {
+    p.y += p.vy;
+    p.alpha -= 0.04;
+    return p.alpha > 0;
+  });
+
+  // 바운스 감소
+  chars.forEach(ch => { if(ch.bounce > 0) ch.bounce = Math.max(0, ch.bounce - 0.06 * df); });
+
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+
+function addParticle(x, y, txt, color){
+  particles.push({x, y, txt, color, vy:-2.5, alpha:1});
+}
+
+function spawnItem(){
+  const t = randType();
+  const spd = 2.5 + Math.random() * 2.5;
+  items.push({
+    x: 30 + Math.random() * (W - 60),
+    y: -ITEM_SIZE,
+    vy: spd,
+    type: t,
+    caught: false,
+    popAlpha: 0, popY: 0, popTxt: '', popColor: '#FFB800',
   });
 }
 
-function loop(ts){
-  if(!running){return}
-  const dt=Math.min(ts-lastTs,80);
-  lastTs=ts;
+// AI: 가장 가까운 낙하 아이템의 x 반환
+function aiTarget(ch){
+  // 비구름은 피함 (70% 확률)
+  let best = null, bestScore = -Infinity;
+  for(const it of items){
+    if(it.caught) continue;
+    const dist = Math.abs(it.x - ch.x);
+    // 비구름 회피 성향
+    const dodge = (it.type.pts < 0) ? -200 : 0;
+    const val = it.type.pts * 30 - dist + dodge - it.y * 0.1;
+    if(val > bestScore){ bestScore = val; best = it; }
+  }
+  return best ? best.x : null;
+}
 
-  spawnAcc+=dt;
-  if(spawnAcc>=spawnMs){
-    spawn();
-    spawnAcc=0;
-    spawnMs=Math.max(550,spawnMs-10);
+// ── 그리기 ────────────────────────────────────────────────────
+function draw(){
+  // 배경
+  const bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#87CEEB');
+  bg.addColorStop(0.6,'#D4F1FF');
+  bg.addColorStop(1,'#EAF9EA');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,W,H);
+
+  // HUD 배경
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillRect(0, 0, W, HUD_H);
+
+  // HUD: 타이머 + 점수
+  const colW = W / (chars.length + 1);
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // 타이머
+  ctx.fillStyle = timeLeft <= 10 ? '#E05555' : '#3A7BD5';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillText(`⏱ ${timeLeft}`, W/2, HUD_H/2);
+
+  // 캐릭터 점수 (좌우)
+  chars.forEach((ch, i) => {
+    const hx = (i < chars.length/2) ? colW * (i*0.8+0.5) : W - colW * ((chars.length-1-i)*0.8+0.5);
+    const isMe = ch.isPlayer;
+    ctx.font = `${isMe?'bold ':'' }16px sans-serif`;
+    ctx.fillStyle = isMe ? '#3A7BD5' : '#555';
+    drawHudChar(hx, HUD_H/2, ch, isMe);
+  });
+
+  // 아이템
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  for(const it of items){
+    if(it.caught){
+      // 점수 팝업
+      ctx.save();
+      ctx.globalAlpha = it.popAlpha;
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillStyle = it.popColor;
+      ctx.fillText(it.popTxt, it.x, it.popY);
+      ctx.restore();
+      continue;
+    }
+    ctx.font = `${ITEM_SIZE}px serif`;
+    ctx.fillText(it.type.e, it.x, it.y);
   }
 
-  ctx.clearRect(0,0,W,H);
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
-
-  for(let i=clouds.length-1;i>=0;i--){
-    const c=clouds[i];
-    if(!c.hit){
-      c.y+=c.vy*(dt/16);
-      // 비구름 놓쳤을 때 그냥 사라짐 (점수 차감 없음)
-      if(c.y>H-BAR+c.sz){clouds.splice(i,1);continue}
-    } else {
-      c.alpha-=0.07;
-      if(c.alpha<=0){clouds.splice(i,1);continue}
-    }
+  // 파티클
+  for(const p of particles){
     ctx.save();
-    ctx.globalAlpha=c.alpha;
-    ctx.font=`${c.sz*(c.hit?1+(.9-c.alpha)*.5:1)}px serif`;
-    ctx.fillText(c.t.e,c.x,c.y);
+    ctx.globalAlpha = p.alpha;
+    ctx.font = '28px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.txt, p.x, p.y);
     ctx.restore();
   }
 
-  raf=requestAnimationFrame(loop);
+  // 지면선
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8,6]);
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND+10); ctx.lineTo(W, GROUND+10);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 캐릭터
+  chars.forEach(ch => drawChar(ch));
 }
 
-function tap(px,py){
-  if(!running)return;
-  for(let i=clouds.length-1;i>=0;i--){
-    const c=clouds[i];
-    if(c.hit)continue;
-    if(Math.abs(px-c.x)<c.sz*.9&&Math.abs(py-c.y)<c.sz*.9){
-      c.hit=true;
-      score=Math.max(0,score+c.t.pt);
-      document.getElementById('sv').textContent=score;
-      particle(px,py,c.t.pt);
-      popChar(c.x);
-      break;
-    }
-  }
+function drawHudChar(x, y, ch, isMe){
+  const parts = [`${ch.icon} ${ch.name}`, `${ch.score}점`];
+  ctx.font = `bold 14px sans-serif`;
+  ctx.fillStyle = isMe ? '#3A7BD5' : '#555';
+  ctx.textAlign = 'center';
+  ctx.fillText(ch.icon + ' ' + ch.name + ' ' + ch.score + '점', x, y);
 }
 
-function popChar(x){
-  const ids=['cY','cB','cK'];
-  const xs=[W*.18,W*.5,W*.82];
-  let mi=0,md=9999;
-  xs.forEach((bx,i)=>{const d=Math.abs(x-bx);if(d<md){md=d;mi=i}});
-  const el=document.getElementById(ids[mi]);
-  el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+function drawChar(ch){
+  const x = ch.x;
+  const bounceOff = ch.bounce * 10;
+  const y = GROUND - bounceOff;
+
+  // 바구니
+  ctx.strokeStyle = ch.color;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  const bw = ch.catchW;
+  ctx.arc(x, y + 14, bw * 0.8, 0, Math.PI);
+  ctx.stroke();
+
+  // 캐릭터 이모지
+  ctx.font = `${CHAR_SIZE}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(ch.icon, x, y);
+
+  // 이름 + (나) 표시
+  ctx.font = `bold 12px sans-serif`;
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = ch.isPlayer ? '#3A7BD5' : '#888';
+  ctx.fillText(ch.name + (ch.isPlayer ? ' 👤' : ''), x, y + 6);
+
+  // 특징 레이블 (캐릭터 위)
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  const traits = ['나비귀', '파마머리', '꺾인꼬리'];
+  ctx.fillText(traits[CHAR_DEF.findIndex(d=>d.name===ch.name)], x, y - CHAR_SIZE - 2);
 }
 
-function particle(x,y,pt){
-  const d=document.createElement('div');
-  d.className='pt';
-  d.textContent=pt>0?`+${pt}⭐`:`${pt}💧`;
-  d.style.cssText=`left:${x-18}px;top:${y-10}px;color:${pt>0?'#FFB800':'#6EC6F5'}`;
-  document.body.appendChild(d);
-  setTimeout(()=>d.remove(),800);
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+// ── 게임 종료 ─────────────────────────────────────────────────
+function endGame(){
+  running = false;
+  clearInterval(ticker);
+  cancelAnimationFrame(raf);
+  document.removeEventListener('keydown', onKeyDown);
+  document.removeEventListener('keyup',   onKeyUp);
+  const canvas = document.getElementById('gameCanvas');
+  canvas.removeEventListener('touchstart', onTouchStart);
+  canvas.removeEventListener('touchmove',  onTouchMove);
+  canvas.removeEventListener('touchend',   onTouchEnd);
+
+  // 순위 정렬
+  const sorted = [...chars].sort((a,b) => b.score - a.score);
+  const myRank = sorted.findIndex(c => c.isPlayer) + 1;
+
+  // 시상대 (1,2,3위 재배치: 2위-1위-3위)
+  const order = [sorted[1], sorted[0], sorted[2]].filter(Boolean);
+  const podClasses = ['p2','p1','p3'];
+  const rankSymbols = ['🥈','🥇','🥉'];
+  const podium = document.getElementById('podium');
+  podium.innerHTML = order.map((ch,i) => `
+    <div class="pod ${podClasses[i]}">
+      <div class="prank">${rankSymbols[i]}</div>
+      <div class="picon">${ch.icon}</div>
+      <div class="pname">${ch.name}${ch.isPlayer?' 👤':''}</div>
+      <div class="pscore">${ch.score}점</div>
+    </div>
+  `).join('');
+
+  const msgs = ['🏆 1등! 최고야!!', '🥈 2등! 잘했어~', '😹 3등... 다음엔 이겨!'];
+  const player = chars[playerIdx];
+  document.getElementById('myResult').innerHTML = `
+    <p>${msgs[myRank-1]}<br>
+    <b>${player.icon} ${player.name}</b>의 최종 점수: <b>${player.score}점</b><br>
+    ${player.name === '까미' ? '💡 까미 특수: 비구름을 –1점으로 튕김!' :
+      player.name === '배추' ? '💡 배추 특수: 가장 넓은 바구니!' :
+      '💡 열무 특수: 가장 빠른 이동속도!'}</p>
+  `;
+
+  show('resultScreen');
 }
 
-function startGame(){
-  document.getElementById('startScreen').style.display='none';
-  const gs=document.getElementById('gameScreen');
-  gs.style.display='block';
-
-  resize();
-  ctx=canvas.getContext('2d');
-  score=0;timeLeft=30;clouds=[];running=true;
-  spawnMs=1200;spawnAcc=0;
-  document.getElementById('sv').textContent='0';
-  document.getElementById('tv').textContent='30';
-
-  lastTs=performance.now();
-  raf=requestAnimationFrame(loop);
-
-  ticker=setInterval(()=>{
-    timeLeft--;
-    document.getElementById('tv').textContent=timeLeft;
-    if(timeLeft<=0)endGame();
-  },1000);
-
-  canvas.addEventListener('touchstart',e=>{
-    e.preventDefault();
-    const r=canvas.getBoundingClientRect();
-    tap(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top);
-  },{passive:false});
-  canvas.addEventListener('click',e=>{
-    const r=canvas.getBoundingClientRect();
-    tap(e.clientX-r.left,e.clientY-r.top);
+// ── 화면 전환 ─────────────────────────────────────────────────
+function show(id){
+  ['selectScreen','gameScreen','resultScreen'].forEach(s=>{
+    const el = document.getElementById(s);
+    el.classList.toggle('show', s === id);
   });
 }
 
-function endGame(){
-  running=false;
-  clearInterval(ticker);
-  cancelAnimationFrame(raf);
-
-  document.getElementById('gameScreen').style.display='none';
-  const rs=document.getElementById('resultScreen');
-  rs.style.display='flex';
-
-  document.getElementById('rs').textContent=score;
-
-  let cls,label,msg;
-  if(score>=25){cls='rs';label='🏆 S랭크!';msg='열무·배추·까미 최강 팀워크!! 구름이 다 우리 거야!! 🌈🎉';}
-  else if(score>=15){cls='ra';label='🥈 A랭크!';msg='훌륭해요! 열무 나비귀가 오늘따라 더 반짝였어요 ✨🦋';}
-  else if(score>=8){cls='rb';label='🥉 B랭크!';msg='잘 했어요! 배추 처진귀가 구름을 소곤소곤 받아줬어요 🐩☁️';}
-  else{cls='rc';label='😹 C랭크';msg='까미가 기역자 꼬리로 응원해요! 다시 도전해봐요 🐱💪';}
-
-  const rk=document.getElementById('rk');
-  rk.textContent=label;
-  rk.className='rank '+cls;
-  document.getElementById('rm').textContent=msg;
+function goSelect(){
+  playerIdx = -1;
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('goBtn').classList.remove('active');
+  show('selectScreen');
 }
 
-function reset(){
-  document.getElementById('resultScreen').style.display='none';
-  document.getElementById('startScreen').style.display='flex';
-}
-
-document.getElementById('startBtn').addEventListener('click',startGame);
-window.addEventListener('resize',()=>{if(running)resize()});
+// 리사이즈
+window.addEventListener('resize', ()=>{
+  if(running){
+    W = window.innerWidth; H = window.innerHeight;
+    const canvas = document.getElementById('gameCanvas');
+    canvas.width = W; canvas.height = H;
+    GROUND = H - CHAR_Y_OFFSET;
+  }
+});
 </script>
 </body>
 </html>
