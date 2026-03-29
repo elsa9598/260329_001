@@ -273,7 +273,11 @@ function rand(){ return Math.random(); }
 // ══════════════════════════════════════════════
 function pick(i){
   pickedIdx=i;
-  document.querySelectorAll('.card').forEach((c,j)=>c.classList.toggle('sel',j===i));
+  document.querySelectorAll('.card').forEach((c,j)=>{
+    const sel=j===i;
+    c.classList.toggle('sel',sel);
+    c.style.opacity=sel?'1':'0.65';
+  });
   if(!Audio.ctx) Audio.init();
   Audio.tone(523,.08,'sine',.2);
   renderSelDiffBtns();
