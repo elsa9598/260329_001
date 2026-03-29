@@ -598,6 +598,7 @@ function draw(aiLv){
 function drawChar(ch){
   const bo=ch.bounce*10;
   const y=GROUND-bo;
+  ctx.globalAlpha=ch.isPlayer?1:0.38;
 
   // 바구니 호
   ctx.strokeStyle=ch.color; ctx.lineWidth=4.5;
@@ -628,6 +629,7 @@ function drawChar(ch){
   ctx.font='10px sans-serif';
   ctx.fillStyle='rgba(0,0,0,.3)';
   ctx.fillText(ch.trait,ch.x,y-CHAR_SZ-2);
+  ctx.globalAlpha=1;
 }
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
