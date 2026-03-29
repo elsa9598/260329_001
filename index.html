@@ -273,10 +273,19 @@ function rand(){ return Math.random(); }
 // ══════════════════════════════════════════════
 function pick(i){
   pickedIdx=i;
-  document.querySelectorAll('.card').forEach((c,j)=>{
-    const sel=j===i;
-    c.classList.toggle('sel',sel);
-    c.style.opacity=sel?'1':'0.65';
+  // getElementById로 명시적으로 접근, setProperty 'important'로 강제 적용
+  const cardIds=['c0','c1','c2'];
+  cardIds.forEach(function(id,j){
+    var el=document.getElementById(id);
+    if(!el) return;
+    var sel=(j===i);
+    if(sel){
+      el.classList.add('sel');
+      el.style.setProperty('opacity','1','important');
+    } else {
+      el.classList.remove('sel');
+      el.style.setProperty('opacity','0.65','important');
+    }
   });
   if(!Audio.ctx) Audio.init();
   Audio.tone(523,.08,'sine',.2);
