@@ -371,9 +371,12 @@ function getAILevel(){
   const elapsed=GAME_SEC-timeLeft;
   return Math.min(10,Math.floor(elapsed/4.5)+pickedDiff);
 }
-function aiSpeed(lv){ return 2.8+0.58*(lv-1); }
-function aiMissChance(lv){ return Math.max(0.02, 0.55-0.059*(lv-1)); }
-function aiDodgeChance(lv){ return Math.min(0.95, 0.08*(lv-1)); }
+// 지수 곡선: lv1≈3, lv5≈5.8, lv10≈14.5 (현재 lv10 대비 약 2배)
+function aiSpeed(lv){ return 3*Math.pow(1.19,lv-1); }
+// lv1=62% 실수, lv10=거의 안 실수
+function aiMissChance(lv){ return Math.max(0.01, 0.62-Math.pow(lv-1,1.4)*0.068); }
+// lv1=0%, lv10=90% 회피
+function aiDodgeChance(lv){ return Math.min(0.9, 0.1*(lv-1)); }
 
 function aiMove(ch, lv, df, claimed){
   const miss=rand()<aiMissChance(lv);
@@ -428,14 +431,16 @@ function loop(ts){
   // 일반 아이템 스폰
   spawnAcc+=dt;
   if(spawnAcc>=spawnMs){
-    spawnItem(false); spawnAcc=0;
-    spawnMs=Math.max(600,spawnMs-14);
+    spawnItem(false,lv); spawnAcc=0;
+    spawnMs=Math.max(500,spawnMs-16);
   }
-  // 위험 스폰
+  // 위험 스폰 (레벨에 따라 간격 줄어들고 고레벨에서 2개 동시)
   hazardAcc+=dt;
-  if(hazardAcc>=hazardMs){
-    spawnItem(true); hazardAcc=0;
-    hazardMs=Math.max(4000,hazardMs-200);
+  const hzInterval=Math.max(1400, 9000-lv*780);
+  if(hazardAcc>=hzInterval){
+    spawnItem(true,lv);
+    if(lv>=6 && rand()<(lv-5)*0.18) spawnItem(true,lv); // lv6부터 추가 소환 확률
+    hazardAcc=0;
   }
 
   // 플레이어 이동
@@ -507,19 +512,25 @@ function loop(ts){
   raf=requestAnimationFrame(loop);
 }
 
-function spawnItem(hazardOnly){
+function spawnItem(hazardOnly, lv=1){
   let type;
   if(hazardOnly){
-    type=rand()<0.5?ITEM_TYPES[4]:ITEM_TYPES[5];
+    // ⚡: lv1≈5, lv10≈15  ❄️: lv1≈2, lv10≈5.5
+    const lvMul=1+0.15*(lv-1);
+    const lightning={...ITEM_TYPES[4], spd:()=>(4.5+lv*1.05+rand()*1.5)};
+    const snow={...ITEM_TYPES[5],      spd:()=>(1.8+lv*0.38+rand()*0.7)};
+    type=rand()<0.5?lightning:snow;
   } else {
-    // 위험 제외 랜덤 (hazard는 별도 스폰)
     const pool=ITEM_TYPES.filter(t=>!t.isHazard);
     const probs=pool.reduce((a,t,i)=>{a.push((a[i-1]||0)+t.prob);return a},[]);
     const r=rand();
-    type=pool[probs.findIndex(p=>r<=p)]||pool[2];
+    const base=pool[probs.findIndex(p=>r<=p)]||pool[2];
+    // 일반 아이템도 레벨에 따라 약간 빨라짐
+    const speedMul=1+0.07*(lv-1);
+    type={...base, spd:()=>base.spd()*speedMul};
   }
   const vy=type.spd();
-  const dx=type.drift?(rand()-.5)*1.5:0;
+  const dx=type.drift?(rand()-.5)*(1.5+lv*0.12):0;
   items.push({
     x:30+rand()*(W-60), y:-ITEM_SZ,
     vy, dx, type, done:false,
