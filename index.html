@@ -76,6 +76,9 @@ html,body{width:100%;height:100%;overflow:hidden;
 .db:hover{background:#D4F1FF}
 .db.dsel{background:linear-gradient(135deg,#6EC6F5,#A78BFA);color:#fff;
   border-color:transparent;box-shadow:0 3px 10px rgba(110,198,245,.5)}
+.db.won{background:linear-gradient(135deg,#FFD700,#FFA500);color:#fff;
+  border-color:transparent;box-shadow:0 2px 8px rgba(255,200,0,.45)}
+.db.won.dsel{background:linear-gradient(135deg,#FF6B35,#FFD700);box-shadow:0 3px 12px rgba(255,165,0,.6)}
 
 /* ── 결과 "나" 강조 ── */
 .pod.me{outline:4px solid #FF6B6B;outline-offset:3px;position:relative}
@@ -131,7 +134,8 @@ html,body{width:100%;height:100%;overflow:hidden;
   <div class="res-title">🏆 최종 순위</div>
   <div class="podium" id="podium"></div>
   <div class="my-box" id="myBox"></div>
-  <button class="retry-btn" onclick="goSel()">🔄 다시 하기</button>
+  <div id="resDiff" style="width:92%;max-width:340px;text-align:center"></div>
+  <button class="retry-btn" style="font-size:.9rem;padding:10px 32px;margin-top:6px" onclick="goSel()">👤 캐릭터 변경</button>
 </div>
 
 <script>
@@ -198,11 +202,19 @@ const Audio = {
 // 로컬 저장
 // ══════════════════════════════════════════════
 const LS_KEY='odunge_cloud_game';
+const LS_WINS_KEY='odunge_cloud_wins';
 function getBests(){ try{return JSON.parse(localStorage.getItem(LS_KEY))||{};}catch{return{};} }
 function saveBest(name,score){
   const b=getBests();
   if(!b[name]||score>b[name]){ b[name]=score; localStorage.setItem(LS_KEY,JSON.stringify(b)); }
 }
+function getWins(){ try{return JSON.parse(localStorage.getItem(LS_WINS_KEY))||{};}catch{return{};} }
+function saveWin(name,diff){
+  const w=getWins();
+  if(!w[name]) w[name]=[];
+  if(!w[name].includes(diff)){ w[name].push(diff); localStorage.setItem(LS_WINS_KEY,JSON.stringify(w)); }
+}
+function wonLevels(name){ const w=getWins(); return w[name]||[]; }
 function showBests(){
   const b=getBests();
   ['열무','배추','까미'].forEach((n,i)=>{
@@ -261,11 +273,12 @@ function pick(i){
   document.querySelectorAll('.card').forEach((c,j)=>c.classList.toggle('sel',j===i));
   if(!Audio.ctx) Audio.init();
   Audio.tone(523,.08,'sine',.2);
+  renderSelDiffBtns();
   checkReady();
 }
 function pickDiff(n){
   pickedDiff=n;
-  document.querySelectorAll('.db').forEach(b=>b.classList.toggle('dsel',+b.dataset.lv===n));
+  renderSelDiffBtns();
   Audio.tone(440,.07,'sine',.18);
   checkReady();
 }
@@ -273,11 +286,35 @@ function checkReady(){
   const ok=pickedIdx>=0&&pickedDiff>=1;
   document.getElementById('goBtn').classList.toggle('on',ok);
 }
-function initDiffBtns(){
+function renderSelDiffBtns(){
   const wrap=document.getElementById('diffBtns');
-  wrap.innerHTML=Array.from({length:10},(_,i)=>`<button class="db" data-lv="${i+1}" onclick="pickDiff(${i+1})">${i+1}</button>`).join('');
+  const name=pickedIdx>=0?CHAR_DEF[pickedIdx].name:null;
+  const won=name?wonLevels(name):[];
+  wrap.innerHTML=Array.from({length:10},(_,i)=>{
+    const n=i+1;
+    const isWon=won.includes(n);
+    const isSel=pickedDiff===n;
+    const cls='db'+(isWon?' won':'')+(isSel?' dsel':'');
+    return `<button class="${cls}" data-lv="${n}" onclick="pickDiff(${n})">${n}${isWon?'★':''}</button>`;
+  }).join('');
 }
-initDiffBtns();
+function renderResultDiffBtns(){
+  const wrap=document.getElementById('resDiff');
+  const name=chars[pickedIdx].name;
+  const won=wonLevels(name);
+  wrap.innerHTML=`<div class="diff-label" style="margin-top:8px;margin-bottom:7px">🎮 레벨 선택 (금색★= 1등 달성)</div>
+  <div class="diff-btns">${Array.from({length:10},(_,i)=>{
+    const n=i+1;
+    const isWon=won.includes(n);
+    const cls='db'+(isWon?' won':'');
+    return `<button class="${cls}" onclick="startAtDiff(${n})">${n}${isWon?'★':''}</button>`;
+  }).join('')}</div>`;
+}
+function startAtDiff(n){
+  pickedDiff=n;
+  startGame();
+}
+renderSelDiffBtns();
 showBests();
 
 // ══════════════════════════════════════════════
@@ -616,6 +653,8 @@ function endGame(){
   // 순위 정렬
   const sorted=[...chars].sort((a,b)=>b.score-a.score);
   const myRank=sorted.findIndex(c=>c.isPlayer)+1;
+  // 1등이면 이 레벨 클리어 저장
+  if(myRank===1) saveWin(chars[pickedIdx].name, pickedDiff);
 
   // 시상대: 2위-1위-3위 순 배치
   const podOrder=[sorted[1],sorted[0],sorted[2]].filter(Boolean);
@@ -641,6 +680,7 @@ function endGame(){
     💡 ${pl.name==='까미'?'까미 특수: 비구름 –1점만':pl.name==='배추'?'배추 특수: 가장 넓은 바구니':'열무 특수: 가장 빠른 이동속도'}</p>
   `;
 
+  renderResultDiffBtns();
   show('res');
   // 종료 팡파레
   [523,659,784,1047].forEach((f,i)=>setTimeout(()=>Audio.tone(f,.2,'triangle',.25),i*120));
@@ -657,8 +697,8 @@ function show(id){
 function goSel(){
   pickedIdx=-1; pickedDiff=-1;
   document.querySelectorAll('.card').forEach(c=>c.classList.remove('sel'));
-  document.querySelectorAll('.db').forEach(b=>b.classList.remove('dsel'));
   document.getElementById('goBtn').classList.remove('on');
+  renderSelDiffBtns();
   showBests();
   show('sel');
 }
