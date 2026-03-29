@@ -338,7 +338,7 @@ function aiSpeed(lv){ return 2.8+0.58*(lv-1); }
 function aiMissChance(lv){ return Math.max(0.02, 0.55-0.059*(lv-1)); }
 function aiDodgeChance(lv){ return Math.min(0.95, 0.08*(lv-1)); }
 
-function aiMove(ch, lv, df){
+function aiMove(ch, lv, df, claimed){
   const miss=rand()<aiMissChance(lv);
   const spd=aiSpeed(lv);
 
@@ -350,22 +350,24 @@ function aiMove(ch, lv, df){
       const away=ch.x<W/2?1:-1;
       ch.x+=away*spd*df*1.8;
       ch.x=clamp(ch.x,30,W-30);
-      return;
+      ch._target=null; return;
     }
   }
 
-  if(miss) return;
+  if(miss){ ch._target=null; return; }
 
-  // 가장 가치 있는 아이템 선택
+  // 가장 가치 있는 아이템 선택 (다른 AI가 타겟 중인 것 제외)
   let best=null,bestVal=-9999;
   for(const it of items){
     if(it.done) continue;
+    if(claimed && claimed.has(it)) continue;
     const dist=Math.abs(it.x-ch.x);
     const timeToGround=(GROUND-it.y)/Math.max(it.vy,0.1);
     const penalty=it.type.isHazard?-300:0;
     const val=it.type.pts*18-dist*.4+timeToGround*.5+penalty;
     if(val>bestVal){bestVal=val;best=it;}
   }
+  ch._target=best;
   if(!best) return;
   const dx=best.x-ch.x;
   const step=Math.min(Math.abs(dx),spd*df);
@@ -410,8 +412,27 @@ function loop(ts){
   }
   pl.x=clamp(pl.x,30,W-30);
 
-  // AI 이동
-  chars.forEach((ch,i)=>{ if(!ch.isPlayer) aiMove(ch,lv,df); });
+  // AI 이동 (각자 다른 아이템 타겟)
+  const aiClaimed=new Set();
+  chars.forEach((ch)=>{
+    if(!ch.isPlayer){
+      aiMove(ch,lv,df,aiClaimed);
+      if(ch._target) aiClaimed.add(ch._target);
+    }
+  });
+  // AI 간격 유지 (서로 밀어내기)
+  const aiPair=chars.filter(c=>!c.isPlayer);
+  if(aiPair.length>=2){
+    const sep=aiPair[1].x-aiPair[0].x;
+    const dist=Math.abs(sep);
+    const minDist=100;
+    if(dist<minDist){
+      const push=(minDist-dist)*0.3*df;
+      const dir=sep===0?1:Math.sign(sep);
+      aiPair[0].x=clamp(aiPair[0].x-dir*push,30,W-30);
+      aiPair[1].x=clamp(aiPair[1].x+dir*push,30,W-30);
+    }
+  }
 
   // 아이템 이동 + 충돌
   for(let i=items.length-1;i>=0;i--){
