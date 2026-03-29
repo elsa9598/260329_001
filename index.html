@@ -65,6 +65,24 @@ html,body{width:100%;height:100%;overflow:hidden;
   border-radius:50px;padding:14px 46px;font-size:1.05rem;font-weight:800;
   box-shadow:0 4px 16px rgba(110,198,245,.4);cursor:pointer;margin-top:4px}
 .retry-btn:active{transform:scale(.95)}
+
+/* ── 난이도 버튼 ── */
+.diff-wrap{width:92%;max-width:340px;margin-bottom:14px}
+.diff-label{font-size:.82rem;color:#7AAACC;font-weight:700;margin-bottom:7px;text-align:center}
+.diff-btns{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.db{background:rgba(255,255,255,.8);border:2px solid #D0E8FF;border-radius:10px;
+  padding:7px 0;min-width:28px;font-size:.85rem;font-weight:800;color:#5A9AD5;
+  cursor:pointer;flex:1;max-width:30px;transition:all .15s}
+.db:hover{background:#D4F1FF}
+.db.dsel{background:linear-gradient(135deg,#6EC6F5,#A78BFA);color:#fff;
+  border-color:transparent;box-shadow:0 3px 10px rgba(110,198,245,.5)}
+
+/* ── 결과 "나" 강조 ── */
+.pod.me{outline:4px solid #FF6B6B;outline-offset:3px;position:relative}
+.pod.me::before{content:'👤 나';position:absolute;top:-28px;left:50%;
+  transform:translateX(-50%);background:#FF6B6B;color:#fff;
+  font-size:.78rem;font-weight:900;padding:3px 10px;border-radius:20px;
+  white-space:nowrap;box-shadow:0 2px 8px rgba(255,107,107,.4)}
 </style>
 </head>
 <body>
@@ -95,6 +113,10 @@ html,body{width:100%;height:100%;overflow:hidden;
     <p>🌈 무지개 <b>+5</b> &nbsp; ☀️ 햇님 <b>+4</b> &nbsp; ☁️ 구름 <b>+3</b><br>
        🌧️ 비구름 <b>–3</b> &nbsp; ⚡ 번개 <b>–5</b> &nbsp; ❄️ 눈 <b>–5</b><br>
        <span style="font-size:.78rem;color:#A78BFA">⚡❄️은 피해야 해요! AI가 점점 강해져요!</span></p>
+  </div>
+  <div class="diff-wrap">
+    <div class="diff-label">🎮 난이도 선택 (AI 시작 레벨)</div>
+    <div class="diff-btns" id="diffBtns"></div>
   </div>
   <button class="go-btn" id="goBtn" onclick="startGame()">🎮 게임 시작!</button>
 </div>
@@ -217,7 +239,7 @@ const CHAR_SZ=52;
 // ══════════════════════════════════════════════
 // 게임 상태
 // ══════════════════════════════════════════════
-let pickedIdx=-1;
+let pickedIdx=-1, pickedDiff=-1;
 let chars=[], items=[], pops=[];
 let W=0,H=0,GROUND=0;
 let running=false,timeLeft=GAME_SEC;
@@ -237,10 +259,25 @@ function rand(){ return Math.random(); }
 function pick(i){
   pickedIdx=i;
   document.querySelectorAll('.card').forEach((c,j)=>c.classList.toggle('sel',j===i));
-  document.getElementById('goBtn').classList.add('on');
   if(!Audio.ctx) Audio.init();
   Audio.tone(523,.08,'sine',.2);
+  checkReady();
 }
+function pickDiff(n){
+  pickedDiff=n;
+  document.querySelectorAll('.db').forEach(b=>b.classList.toggle('dsel',+b.dataset.lv===n));
+  Audio.tone(440,.07,'sine',.18);
+  checkReady();
+}
+function checkReady(){
+  const ok=pickedIdx>=0&&pickedDiff>=1;
+  document.getElementById('goBtn').classList.toggle('on',ok);
+}
+function initDiffBtns(){
+  const wrap=document.getElementById('diffBtns');
+  wrap.innerHTML=Array.from({length:10},(_,i)=>`<button class="db" data-lv="${i+1}" onclick="pickDiff(${i+1})">${i+1}</button>`).join('');
+}
+initDiffBtns();
 showBests();
 
 // ══════════════════════════════════════════════
@@ -266,7 +303,7 @@ function startGame(){
   running=true; timeLeft=GAME_SEC;
   spawnAcc=0; spawnMs=1250;
   hazardAcc=0; hazardMs=9000;
-  prevAILevel=1; lastTs=performance.now();
+  prevAILevel=pickedDiff; lastTs=performance.now();
 
   cv.addEventListener('touchstart', tStart,{passive:false});
   cv.addEventListener('touchmove',  tMove, {passive:false});
@@ -295,7 +332,7 @@ function kUp(e)  {if(e.key==='ArrowLeft')keys.l=false;if(e.key==='ArrowRight')ke
 // ══════════════════════════════════════════════
 function getAILevel(){
   const elapsed=GAME_SEC-timeLeft;
-  return Math.min(10,Math.floor(elapsed/4.5)+1);
+  return Math.min(10,Math.floor(elapsed/4.5)+pickedDiff);
 }
 function aiSpeed(lv){ return 2.8+0.58*(lv-1); }
 function aiMissChance(lv){ return Math.max(0.02, 0.55-0.059*(lv-1)); }
@@ -564,10 +601,10 @@ function endGame(){
   const podCls=['p2','p1','p3'];
   const medals=['🥈','🥇','🥉'];
   document.getElementById('podium').innerHTML=podOrder.map((ch,i)=>`
-    <div class="pod ${podCls[i]}">
+    <div class="pod ${podCls[i]}${ch.isPlayer?' me':''}">
       <div class="prank">${medals[i]}</div>
       <div class="picon">${ch.icon}</div>
-      <div class="pname">${ch.name}${ch.isPlayer?' 👤':''}</div>
+      <div class="pname">${ch.name}</div>
       <div class="pscore">${ch.score}점</div>
     </div>
   `).join('');
@@ -597,8 +634,9 @@ function show(id){
   });
 }
 function goSel(){
-  pickedIdx=-1;
+  pickedIdx=-1; pickedDiff=-1;
   document.querySelectorAll('.card').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('.db').forEach(b=>b.classList.remove('dsel'));
   document.getElementById('goBtn').classList.remove('on');
   showBests();
   show('sel');
