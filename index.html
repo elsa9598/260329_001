@@ -6,350 +6,343 @@
 <title>🦋 구름 릴레이</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
-#app{width:100%;height:100%;position:relative}
-
-/* 배경 그라데이션 */
-.sky{
-  position:absolute;inset:0;
-  background:linear-gradient(180deg,#B8E4F9 0%,#D4F1FF 40%,#E8F8E8 70%,#FFF5F5 100%);
-}
-
-/* 화면 공통 */
-.screen{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  transition:opacity .3s;pointer-events:all;
-}
-.screen.hidden{opacity:0;pointer-events:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#B8E4F9;
+  font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
 
 /* ── 시작 화면 ── */
-#startScreen .title{
-  font-size:1.8rem;font-weight:900;color:#5B7FA6;
-  text-shadow:0 2px 8px rgba(91,127,166,.3);
-  text-align:center;line-height:1.4;margin-bottom:8px;
+#startScreen{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#87CEEB,#D4F1FF 50%,#FFF5FA);
+  z-index:10;
 }
-#startScreen .subtitle{
-  font-size:1rem;color:#7AAACC;margin-bottom:28px;text-align:center;
+.logo{font-size:2rem;font-weight:900;color:#3A7BD5;text-align:center;
+  line-height:1.4;margin-bottom:6px;
+  text-shadow:0 2px 8px rgba(58,123,213,.2)}
+.logo-sub{font-size:.95rem;color:#7AAACC;margin-bottom:24px}
+.cast-row{font-size:3.5rem;letter-spacing:8px;margin-bottom:6px}
+.cast-names{font-size:.85rem;color:#888;letter-spacing:3px;margin-bottom:28px}
+.rule-box{
+  background:rgba(255,255,255,.8);border-radius:20px;
+  padding:18px 24px;width:88%;max-width:320px;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);margin-bottom:28px;
+  text-align:center;
 }
-.chars-row{font-size:3.2rem;margin-bottom:12px;letter-spacing:4px}
-.char-names{font-size:.85rem;color:#888;margin-bottom:32px;letter-spacing:2px}
-.card{
-  background:rgba(255,255,255,.75);backdrop-filter:blur(8px);
-  border-radius:20px;padding:16px 22px;
-  box-shadow:0 4px 20px rgba(0,0,0,.1);
-  max-width:300px;width:88%;margin-bottom:20px;
-}
-.card p{font-size:.88rem;color:#555;line-height:1.8;text-align:center}
-.btn{
+.rule-box p{font-size:.9rem;color:#555;line-height:2}
+.start-btn{
   background:linear-gradient(135deg,#6EC6F5,#A78BFA);
   color:#fff;border:none;border-radius:50px;
-  padding:16px 52px;font-size:1.2rem;font-weight:800;
-  box-shadow:0 6px 20px rgba(110,198,245,.5);
-  cursor:pointer;transition:transform .1s,box-shadow .1s;
+  padding:18px 60px;font-size:1.25rem;font-weight:900;
+  box-shadow:0 6px 24px rgba(110,198,245,.5);cursor:pointer;
+  animation:pulse 1.8s ease-in-out infinite;
 }
-.btn:active{transform:scale(.95);box-shadow:0 2px 10px rgba(110,198,245,.3)}
+.start-btn:active{transform:scale(.95)}
+@keyframes pulse{
+  0%,100%{box-shadow:0 6px 24px rgba(110,198,245,.5)}
+  50%{box-shadow:0 6px 36px rgba(167,139,250,.7)}
+}
 
 /* ── 게임 화면 ── */
-#gameScreen{justify-content:flex-start;overflow:hidden}
+#gameScreen{
+  position:fixed;inset:0;display:none;
+  background:linear-gradient(180deg,#87CEEB,#D4F1FF 50%,#EAF9EA);
+}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* HUD */
 .hud{
-  width:100%;padding:14px 20px 10px;display:flex;justify-content:space-between;
-  align-items:center;position:relative;z-index:10;
+  position:absolute;top:0;left:0;right:0;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 20px;z-index:5;
+  background:rgba(255,255,255,.15);
 }
 .hud-score{
-  background:rgba(255,255,255,.8);border-radius:20px;padding:6px 18px;
-  font-size:1.3rem;font-weight:800;color:#5B7FA6;
+  background:rgba(255,255,255,.85);border-radius:20px;
+  padding:8px 20px;font-size:1.3rem;font-weight:900;color:#3A7BD5;
 }
 .hud-timer{
-  background:rgba(255,255,255,.8);border-radius:20px;padding:6px 18px;
-  font-size:1.3rem;font-weight:800;color:#E07070;min-width:60px;text-align:center;
+  background:rgba(255,255,255,.85);border-radius:20px;
+  padding:8px 20px;font-size:1.3rem;font-weight:900;color:#E07070;
+  min-width:72px;text-align:center;
 }
-#cloudCanvas{position:absolute;inset:0;width:100%;height:100%}
 
 /* 캐릭터 바 */
 .char-bar{
-  position:absolute;bottom:0;left:0;right:0;
-  background:rgba(255,255,255,.6);backdrop-filter:blur(6px);
+  position:absolute;bottom:0;left:0;right:0;height:80px;
+  background:rgba(255,255,255,.75);
   display:flex;justify-content:space-around;align-items:center;
-  padding:10px 0 12px;z-index:10;border-top:2px solid rgba(255,255,255,.9);
+  z-index:5;border-top:2px solid rgba(255,255,255,.9);
+  backdrop-filter:blur(4px);
 }
-.char-unit{display:flex;flex-direction:column;align-items:center;gap:2px}
-.char-emoji{font-size:2.4rem;transition:transform .15s}
-.char-emoji.bounce{animation:bounce .3s ease}
-.char-label{font-size:.72rem;color:#666;font-weight:600}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.cu{display:flex;flex-direction:column;align-items:center;gap:2px}
+.ce{font-size:2.4rem;display:inline-block;transition:transform .1s}
+.ce.pop{animation:pop .3s ease}
+.cl{font-size:.72rem;color:#666;font-weight:700}
+@keyframes pop{0%{transform:scale(1) translateY(0)}40%{transform:scale(1.3) translateY(-10px)}100%{transform:scale(1) translateY(0)}}
+
+/* 파티클 */
+.pt{
+  position:fixed;font-size:1.4rem;font-weight:900;
+  pointer-events:none;z-index:20;
+  animation:ptUp .75s ease-out forwards;
+}
+@keyframes ptUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-70px) scale(.5)}}
 
 /* ── 결과 화면 ── */
-#resultScreen .result-title{
-  font-size:2rem;font-weight:900;color:#5B7FA6;margin-bottom:8px;text-align:center;
+#resultScreen{
+  position:fixed;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#87CEEB,#D4F1FF 50%,#FFF5FA);
+  z-index:10;
 }
-#resultScreen .result-score{
-  font-size:3.8rem;font-weight:900;
+.r-chars{font-size:3rem;letter-spacing:6px;margin-bottom:8px}
+.r-title{font-size:1.9rem;font-weight:900;color:#3A7BD5;margin-bottom:6px}
+.r-score{
+  font-size:4.5rem;font-weight:900;
   background:linear-gradient(135deg,#6EC6F5,#A78BFA);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-bottom:4px;
 }
-#resultScreen .result-label{font-size:1rem;color:#888;margin-bottom:20px}
-#resultScreen .result-chars{font-size:3rem;margin-bottom:8px;letter-spacing:4px}
-#resultScreen .result-msg{
-  font-size:1rem;color:#666;text-align:center;line-height:1.7;
-  background:rgba(255,255,255,.7);border-radius:16px;
-  padding:14px 20px;max-width:300px;width:88%;margin-bottom:28px;
+.r-unit{font-size:1rem;color:#888;margin-bottom:16px}
+.rank{
+  font-size:1.25rem;font-weight:900;padding:8px 28px;
+  border-radius:30px;margin-bottom:16px;
 }
-.rank-badge{
-  font-size:1.3rem;font-weight:800;padding:6px 20px;border-radius:30px;
-  margin-bottom:16px;
+.rs{background:#FFD700;color:#7A5900}
+.ra{background:#C0C0C0;color:#444}
+.rb{background:#CD7F32;color:#fff}
+.rc{background:#E8E8E8;color:#777}
+.r-msg{
+  font-size:.95rem;color:#666;text-align:center;line-height:1.8;
+  background:rgba(255,255,255,.75);border-radius:16px;
+  padding:14px 22px;width:88%;max-width:320px;margin-bottom:28px;
 }
-.rank-s{background:#FFD700;color:#7A5900}
-.rank-a{background:#C0C0C0;color:#4A4A4A}
-.rank-b{background:#CD7F32;color:#fff}
-.rank-c{background:#E8E8E8;color:#666}
-
-/* 파티클/별 */
-.star{position:absolute;pointer-events:none;font-size:1.4rem;animation:starUp .8s ease-out forwards}
-@keyframes starUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-80px) scale(0);opacity:0}}
+.retry-btn{
+  background:linear-gradient(135deg,#6EC6F5,#A78BFA);
+  color:#fff;border:none;border-radius:50px;
+  padding:16px 52px;font-size:1.1rem;font-weight:800;
+  box-shadow:0 6px 20px rgba(110,198,245,.4);cursor:pointer;
+}
+.retry-btn:active{transform:scale(.95)}
 </style>
 </head>
 <body>
-<div id="app">
-  <div class="sky"></div>
 
-  <!-- 시작 화면 -->
-  <div class="screen" id="startScreen">
-    <div class="title">🦋 나비귀·처진귀<br>접힌귀 구름 릴레이</div>
-    <div class="subtitle">오둥이 팀플레이 게임</div>
-    <div class="chars-row">🦋🐩🐱</div>
-    <div class="char-names">열무  ·  배추  ·  까미</div>
-    <div class="card">
-      <p>🌈 무지개 구름 <strong>+3점</strong><br>
-         ☁️ 솜구름 <strong>+1점</strong><br>
-         🌧️ 비구름 <strong>-2점</strong><br>
-         ⏱️ 30초 안에 최고점 노리기!</p>
-    </div>
-    <button class="btn" onclick="startGame()">🎮 게임 시작!</button>
+<!-- 시작 화면 -->
+<div id="startScreen">
+  <div class="logo">🦋 나비귀·처진귀<br>접힌귀 구름 릴레이</div>
+  <div class="logo-sub">오둥이 팀플레이 게임</div>
+  <div class="cast-row">🦋🐩🐱</div>
+  <div class="cast-names">열무 · 배추 · 까미</div>
+  <div class="rule-box">
+    <p>
+      🌈 무지개 구름 <b>+3점</b><br>
+      ☁️ 솜구름 <b>+1점</b><br>
+      🌧️ 비구름 <b>–2점</b><br>
+      ⏱️ 30초 안에 최고 점수!
+    </p>
   </div>
+  <button class="start-btn" id="startBtn">🎮 게임 시작!</button>
+</div>
 
-  <!-- 게임 화면 -->
-  <div class="screen hidden" id="gameScreen">
-    <div class="hud">
-      <div class="hud-score">⭐ <span id="scoreVal">0</span>점</div>
-      <div class="hud-timer">⏱ <span id="timerVal">30</span></div>
-    </div>
-    <canvas id="cloudCanvas"></canvas>
-    <div class="char-bar">
-      <div class="char-unit">
-        <div class="char-emoji" id="charYeolmu">🦋</div>
-        <div class="char-label">열무</div>
-      </div>
-      <div class="char-unit">
-        <div class="char-emoji" id="charBaechu">🐩</div>
-        <div class="char-label">배추</div>
-      </div>
-      <div class="char-unit">
-        <div class="char-emoji" id="charKkami">🐱</div>
-        <div class="char-label">까미</div>
-      </div>
-    </div>
+<!-- 게임 화면 -->
+<div id="gameScreen">
+  <canvas id="c"></canvas>
+  <div class="hud">
+    <div class="hud-score">⭐ <span id="sv">0</span>점</div>
+    <div class="hud-timer">⏱ <span id="tv">30</span></div>
   </div>
-
-  <!-- 결과 화면 -->
-  <div class="screen hidden" id="resultScreen">
-    <div class="result-chars">🦋🐩🐱</div>
-    <div class="result-title">릴레이 완료!</div>
-    <div class="result-score" id="finalScore">0</div>
-    <div class="result-label">점</div>
-    <div class="rank-badge" id="rankBadge"></div>
-    <div class="result-msg" id="resultMsg"></div>
-    <button class="btn" onclick="restartGame()">🔄 다시 하기</button>
+  <div class="char-bar">
+    <div class="cu"><span class="ce" id="cY">🦋</span><span class="cl">열무</span></div>
+    <div class="cu"><span class="ce" id="cB">🐩</span><span class="cl">배추</span></div>
+    <div class="cu"><span class="ce" id="cK">🐱</span><span class="cl">까미</span></div>
   </div>
 </div>
 
+<!-- 결과 화면 -->
+<div id="resultScreen">
+  <div class="r-chars">🦋🐩🐱</div>
+  <div class="r-title">릴레이 완료!</div>
+  <div class="r-score" id="rs">0</div>
+  <div class="r-unit">점</div>
+  <div class="rank" id="rk"></div>
+  <div class="r-msg" id="rm"></div>
+  <button class="retry-btn" onclick="reset()">🔄 다시 하기</button>
+</div>
+
 <script>
-const CLOUD_TYPES = [
-  { emoji:'🌈', label:'무지개구름', pts:3, spd:1.4, size:52, prob:.12 },
-  { emoji:'☁️', label:'솜구름',    pts:1, spd:2.0, size:46, prob:.60 },
-  { emoji:'⛅',  label:'작은구름', pts:1, spd:2.5, size:40, prob:.18 },
-  { emoji:'🌧️', label:'비구름',   pts:-2,spd:1.8, size:44, prob:.10 },
+const TYPES=[
+  {e:'🌈',pt:3, spd:1.2,r:.12},
+  {e:'☁️', pt:1, spd:2.0,r:.55},
+  {e:'⛅', pt:1, spd:2.6,r:.20},
+  {e:'🌧️',pt:-2,spd:1.7,r:.13},
 ];
+// 누적 확률
+const CUM=TYPES.reduce((a,t,i)=>{a.push((a[i-1]||0)+t.r);return a},[]);
 
-let score=0, timeLeft=30, running=false;
-let clouds=[], animId=null, timerInterval=null;
-let canvas, ctx, W, H;
-let charBounceTimeout={yeolmu:null,baechu:null,kami:null};
+let score=0,timeLeft=30,running=false;
+let clouds=[],raf=null,ticker=null;
+let W=0,H=0,BAR=80,HUD=60;
+let spawnMs=1200,spawnAcc=0,lastTs=0;
+let ctx;
 
-// 전체 확률 합 = 1 보장용 누적
-const PROBS = CLOUD_TYPES.reduce((a,t,i)=>{a.push((a[i-1]||0)+t.prob);return a},[]);
+const canvas=document.getElementById('c');
 
 function randType(){
   const r=Math.random();
-  return CLOUD_TYPES[PROBS.findIndex(p=>r<=p)] || CLOUD_TYPES[1];
+  return TYPES[CUM.findIndex(p=>r<=p)]||TYPES[1];
 }
 
-function initCanvas(){
-  canvas=document.getElementById('cloudCanvas');
-  const gameScreen=document.getElementById('gameScreen');
-  W=canvas.width=gameScreen.offsetWidth;
-  H=canvas.height=gameScreen.offsetHeight;
+function resize(){
+  W=window.innerWidth;
+  H=window.innerHeight;
+  canvas.width=W;
+  canvas.height=H;
 }
 
-function spawnCloud(){
+function spawn(){
   const t=randType();
+  const sz=44+Math.random()*12;
   clouds.push({
-    x:Math.random()*(W-80)+40,
-    y:-60,
-    vy:t.spd*(0.9+Math.random()*.3),
-    type:t,
-    size:t.size,
-    hit:false,
-    alpha:1,
-    scale:1,
+    x:sz+Math.random()*(W-sz*2),
+    y:-sz,
+    vy:t.spd*(0.85+Math.random()*.3),
+    t,sz,
+    hit:false,alpha:1
   });
 }
 
-function drawCloud(c){
-  ctx.save();
-  ctx.globalAlpha=c.alpha;
-  ctx.font=`${c.size*(c.scale||1)}px serif`;
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
-  ctx.fillText(c.type.emoji, c.x, c.y);
-  ctx.restore();
-}
+function loop(ts){
+  if(!running){return}
+  const dt=Math.min(ts-lastTs,80);
+  lastTs=ts;
 
-let spawnTimer=0, spawnInterval=1200; // ms
-let lastTime=0;
-
-function gameLoop(ts){
-  if(!running) return;
-  const dt=Math.min(ts-lastTime,100);
-  lastTime=ts;
-  spawnTimer+=dt;
-  if(spawnTimer>=spawnInterval){
-    spawnCloud();
-    spawnTimer=0;
-    spawnInterval=Math.max(600, spawnInterval-8);
+  spawnAcc+=dt;
+  if(spawnAcc>=spawnMs){
+    spawn();
+    spawnAcc=0;
+    spawnMs=Math.max(550,spawnMs-10);
   }
 
   ctx.clearRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
 
-  const barH=80;
-  clouds.forEach(c=>{
-    if(!c.hit){
-      c.y+=c.vy*(dt/16);
-    } else {
-      c.scale=c.scale*1.1+0.05;
-      c.alpha-=0.08;
-    }
-    drawCloud(c);
-  });
-
-  // 비 구름 하단 도달 체크 (놓친 경우 무효 처리만)
-  clouds=clouds.filter(c=>c.y<H-barH+30 || c.hit && c.alpha>0);
-  // hit된 구름 페이드 완료 제거
-  clouds=clouds.filter(c=>!c.hit || c.alpha>0);
-
-  animId=requestAnimationFrame(gameLoop);
-}
-
-function startGame(){
-  showScreen('gameScreen');
-  initCanvas();
-  score=0; timeLeft=30; clouds=[]; running=true;
-  spawnTimer=0; spawnInterval=1200;
-  document.getElementById('scoreVal').textContent='0';
-  document.getElementById('timerVal').textContent='30';
-
-  lastTime=performance.now();
-  animId=requestAnimationFrame(gameLoop);
-
-  timerInterval=setInterval(()=>{
-    timeLeft--;
-    document.getElementById('timerVal').textContent=timeLeft;
-    if(timeLeft<=0){ endGame(); }
-  },1000);
-
-  canvas.addEventListener('touchstart', onTap, {passive:true});
-  canvas.addEventListener('click', onTap);
-}
-
-function onTap(e){
-  if(!running) return;
-  const rect=canvas.getBoundingClientRect();
-  const cx=e.touches ? e.touches[0].clientX : e.clientX;
-  const cy=e.touches ? e.touches[0].clientY : e.clientY;
-  const px=cx-rect.left, py=cy-rect.top;
-
-  let hit=false;
   for(let i=clouds.length-1;i>=0;i--){
     const c=clouds[i];
-    if(c.hit) continue;
-    const dx=px-c.x, dy=py-c.y;
-    if(Math.sqrt(dx*dx+dy*dy)<c.size*.8){
+    if(!c.hit){
+      c.y+=c.vy*(dt/16);
+      // 비구름 놓쳤을 때 그냥 사라짐 (점수 차감 없음)
+      if(c.y>H-BAR+c.sz){clouds.splice(i,1);continue}
+    } else {
+      c.alpha-=0.07;
+      if(c.alpha<=0){clouds.splice(i,1);continue}
+    }
+    ctx.save();
+    ctx.globalAlpha=c.alpha;
+    ctx.font=`${c.sz*(c.hit?1+(.9-c.alpha)*.5:1)}px serif`;
+    ctx.fillText(c.t.e,c.x,c.y);
+    ctx.restore();
+  }
+
+  raf=requestAnimationFrame(loop);
+}
+
+function tap(px,py){
+  if(!running)return;
+  for(let i=clouds.length-1;i>=0;i--){
+    const c=clouds[i];
+    if(c.hit)continue;
+    if(Math.abs(px-c.x)<c.sz*.9&&Math.abs(py-c.y)<c.sz*.9){
       c.hit=true;
-      score=Math.max(0,score+c.type.pts);
-      document.getElementById('scoreVal').textContent=score;
-      showStar(cx,cy,c.type.pts);
-      bounceChar(c.x);
-      hit=true;
+      score=Math.max(0,score+c.t.pt);
+      document.getElementById('sv').textContent=score;
+      particle(px,py,c.t.pt);
+      popChar(c.x);
       break;
     }
   }
 }
 
-function bounceChar(x){
-  // x 위치에 따라 가장 가까운 캐릭터 bounce
-  const ids=['charYeolmu','charBaechu','charKkami'];
-  const positions=[W*.18,W*.5,W*.82];
-  let nearest=0, minD=9999;
-  positions.forEach((px,i)=>{const d=Math.abs(x-px);if(d<minD){minD=d;nearest=i}});
-  const el=document.getElementById(ids[nearest]);
-  el.classList.remove('bounce');
-  void el.offsetWidth;
-  el.classList.add('bounce');
+function popChar(x){
+  const ids=['cY','cB','cK'];
+  const xs=[W*.18,W*.5,W*.82];
+  let mi=0,md=9999;
+  xs.forEach((bx,i)=>{const d=Math.abs(x-bx);if(d<md){md=d;mi=i}});
+  const el=document.getElementById(ids[mi]);
+  el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
 }
 
-function showStar(x,y,pts){
-  const app=document.getElementById('app');
-  const s=document.createElement('div');
-  s.className='star';
-  s.textContent=pts>0?`+${pts}⭐`:`${pts}💦`;
-  s.style.cssText=`left:${x-20}px;top:${y-20}px;color:${pts>0?'#FFD700':'#6EC6F5'}`;
-  app.appendChild(s);
-  setTimeout(()=>s.remove(),900);
+function particle(x,y,pt){
+  const d=document.createElement('div');
+  d.className='pt';
+  d.textContent=pt>0?`+${pt}⭐`:`${pt}💧`;
+  d.style.cssText=`left:${x-18}px;top:${y-10}px;color:${pt>0?'#FFB800':'#6EC6F5'}`;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),800);
+}
+
+function startGame(){
+  document.getElementById('startScreen').style.display='none';
+  const gs=document.getElementById('gameScreen');
+  gs.style.display='block';
+
+  resize();
+  ctx=canvas.getContext('2d');
+  score=0;timeLeft=30;clouds=[];running=true;
+  spawnMs=1200;spawnAcc=0;
+  document.getElementById('sv').textContent='0';
+  document.getElementById('tv').textContent='30';
+
+  lastTs=performance.now();
+  raf=requestAnimationFrame(loop);
+
+  ticker=setInterval(()=>{
+    timeLeft--;
+    document.getElementById('tv').textContent=timeLeft;
+    if(timeLeft<=0)endGame();
+  },1000);
+
+  canvas.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const r=canvas.getBoundingClientRect();
+    tap(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top);
+  },{passive:false});
+  canvas.addEventListener('click',e=>{
+    const r=canvas.getBoundingClientRect();
+    tap(e.clientX-r.left,e.clientY-r.top);
+  });
 }
 
 function endGame(){
   running=false;
-  clearInterval(timerInterval);
-  cancelAnimationFrame(animId);
-  canvas.removeEventListener('touchstart',onTap);
-  canvas.removeEventListener('click',onTap);
+  clearInterval(ticker);
+  cancelAnimationFrame(raf);
 
-  document.getElementById('finalScore').textContent=score;
+  document.getElementById('gameScreen').style.display='none';
+  const rs=document.getElementById('resultScreen');
+  rs.style.display='flex';
 
-  let rank,msg;
-  if(score>=25){ rank='🏆 S랭크!'; msg='열무·배추·까미 최강 팀워크!! 구름이 다 우리 거야!! 🌈🎉🐾'; }
-  else if(score>=15){ rank='🥈 A랭크!'; msg='훌륭해요! 열무 나비귀가 오늘따라 더 반짝인다! ✨🦋'; }
-  else if(score>=8){ rank='🥉 B랭크!'; msg='잘 했어요! 배추 처진귀가 구름을 소곤소곤 받아줬어요 🐩☁️'; }
-  else{ rank='😹 C랭크'; msg='까미가 기역자 꼬리로 응원해요! 다시 도전해봐요! 🐱💪'; }
+  document.getElementById('rs').textContent=score;
 
-  const badge=document.getElementById('rankBadge');
-  badge.textContent=rank;
-  badge.className='rank-badge '+(score>=25?'rank-s':score>=15?'rank-a':score>=8?'rank-b':'rank-c');
-  document.getElementById('resultMsg').textContent=msg;
+  let cls,label,msg;
+  if(score>=25){cls='rs';label='🏆 S랭크!';msg='열무·배추·까미 최강 팀워크!! 구름이 다 우리 거야!! 🌈🎉';}
+  else if(score>=15){cls='ra';label='🥈 A랭크!';msg='훌륭해요! 열무 나비귀가 오늘따라 더 반짝였어요 ✨🦋';}
+  else if(score>=8){cls='rb';label='🥉 B랭크!';msg='잘 했어요! 배추 처진귀가 구름을 소곤소곤 받아줬어요 🐩☁️';}
+  else{cls='rc';label='😹 C랭크';msg='까미가 기역자 꼬리로 응원해요! 다시 도전해봐요 🐱💪';}
 
-  setTimeout(()=>showScreen('resultScreen'),400);
+  const rk=document.getElementById('rk');
+  rk.textContent=label;
+  rk.className='rank '+cls;
+  document.getElementById('rm').textContent=msg;
 }
 
-function restartGame(){
-  showScreen('startScreen');
+function reset(){
+  document.getElementById('resultScreen').style.display='none';
+  document.getElementById('startScreen').style.display='flex';
 }
 
-function showScreen(id){
-  ['startScreen','gameScreen','resultScreen'].forEach(s=>{
-    document.getElementById(s).classList.toggle('hidden', s!==id);
-  });
-}
+document.getElementById('startBtn').addEventListener('click',startGame);
+window.addEventListener('resize',()=>{if(running)resize()});
 </script>
 </body>
 </html>
