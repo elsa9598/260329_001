@@ -207,6 +207,19 @@ const Audio = {
   stopBGM(){
     this.bgmOn=false;
     clearTimeout(this.bgmTimer);
+  },
+  win(){
+    // 승리: 밝은 상승 팡파레
+    [523,659,784,880,1047].forEach((f,i)=>this.tone(f,.18,'triangle',.28,i*.1));
+    setTimeout(()=>{
+      this.tone(1047,.4,'sine',.35,.0);
+      this.tone(784,.4,'sine',.2,.0);
+    },550);
+  },
+  lose(){
+    // 패배: 하강 멜로디
+    [523,440,392,330].forEach((f,i)=>this.tone(f,.2,'triangle',.22,i*.13));
+    setTimeout(()=>this.tone(262,.6,'sine',.3,.0),560);
   }
 };
 
@@ -336,6 +349,7 @@ function requestFs(){
 // 게임 시작
 // ══════════════════════════════════════════════
 function startGame(){
+  Audio.init();
   requestFs();
   show('game');
 
@@ -711,8 +725,9 @@ function endGame(){
 
   renderResultDiffBtns();
   show('res');
-  // 종료 팡파레
-  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>Audio.tone(f,.2,'triangle',.25),i*120));
+  // 승리/패배 사운드
+  if(myRank===1) Audio.win();
+  else Audio.lose();
 }
 
 // ══════════════════════════════════════════════
