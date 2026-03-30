@@ -2,11 +2,14 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>🌈 오둥이 구름 받기</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;
+html,body{width:100%;height:100dvh;overflow:hidden;
   font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#87CEEB}
 #rotateMsg{display:none;position:fixed;inset:0;background:#1a1a2e;color:#fff;
   font-size:1.3rem;font-weight:700;align-items:center;justify-content:center;
@@ -97,24 +100,30 @@ html,body{width:100%;height:100%;overflow:hidden;
 <!-- 선택 화면 -->
 <div class="screen show" id="sel">
   <div class="sel-title">🌈 오둥이 구름 받기</div>
-  <div class="sel-sub">내 캐릭터를 선택하세요</div>
-  <div class="cards">
-    <div class="card" id="c0" onclick="pick(0)">
-      <div class="ic">🦋</div><div class="cn">열무</div>
-      <div class="ct">나비귀<br>빠른 이동</div>
-      <div class="best" id="b0"></div>
+  <div class="sel-sub">구름을 받아라! AI와 대결!</div>
+
+  <!-- 캐릭터 라인업: 배추(AI) · 열무(나) · 까미(AI) -->
+  <div style="display:flex;gap:14px;justify-content:center;align-items:flex-end;margin-bottom:14px;padding:0 10px">
+    <div style="background:rgba(255,255,255,.6);border-radius:18px;padding:10px 14px;text-align:center;opacity:.72">
+      <div style="font-size:2.2rem">🐩</div>
+      <div style="font-size:.82rem;font-weight:700;color:#666;margin-top:3px">배추</div>
+      <div style="font-size:.68rem;color:#999">AI</div>
+      <div class="best" id="b1" style="font-size:.68rem;color:#A78BFA;margin-top:2px"></div>
     </div>
-    <div class="card" id="c1" onclick="pick(1)">
-      <div class="ic">🐩</div><div class="cn">배추</div>
-      <div class="ct">파마머리<br>넓은 범위</div>
-      <div class="best" id="b1"></div>
+    <div style="background:rgba(255,255,255,.95);border-radius:22px;padding:14px 20px;text-align:center;border:3px solid #6EC6F5;box-shadow:0 6px 24px rgba(110,198,245,.45)">
+      <div style="font-size:3.4rem">🦋</div>
+      <div style="font-size:1.05rem;font-weight:900;color:#3A7BD5;margin-top:4px">열무</div>
+      <div style="font-size:.78rem;color:#FF6B6B;font-weight:800;margin-top:3px">👤 나</div>
+      <div class="best" id="b0" style="font-size:.7rem;color:#A78BFA;margin-top:3px"></div>
     </div>
-    <div class="card" id="c2" onclick="pick(2)">
-      <div class="ic">🐱</div><div class="cn">까미</div>
-      <div class="ct">꺾인꼬리<br>비구름 -1만</div>
-      <div class="best" id="b2"></div>
+    <div style="background:rgba(255,255,255,.6);border-radius:18px;padding:10px 14px;text-align:center;opacity:.72">
+      <div style="font-size:2.2rem">🐱</div>
+      <div style="font-size:.82rem;font-weight:700;color:#666;margin-top:3px">까미</div>
+      <div style="font-size:.68rem;color:#999">AI</div>
+      <div class="best" id="b2" style="font-size:.68rem;color:#A78BFA;margin-top:2px"></div>
     </div>
   </div>
+
   <div class="rule-box">
     <p>🌈 무지개 <b>+5</b> &nbsp; ☀️ 햇님 <b>+4</b> &nbsp; ☁️ 구름 <b>+3</b><br>
        🌧️ 비구름 <b>–3</b> &nbsp; ⚡ 번개 <b>–5</b> &nbsp; ❄️ 눈 <b>–5</b><br>
@@ -138,7 +147,7 @@ html,body{width:100%;height:100%;overflow:hidden;
   <div class="podium" id="podium"></div>
   <div class="my-box" id="myBox"></div>
   <div id="resDiff" style="width:92%;max-width:340px;text-align:center"></div>
-  <button class="retry-btn" style="font-size:.9rem;padding:10px 32px;margin-top:6px" onclick="goSel()">👤 캐릭터 변경</button>
+  <button class="retry-btn" style="font-size:.9rem;padding:10px 32px;margin-top:6px" onclick="goSel()">🔄 다시 하기</button>
 </div>
 
 <script>
@@ -254,7 +263,7 @@ const CHAR_SZ=52;
 // ══════════════════════════════════════════════
 // 게임 상태
 // ══════════════════════════════════════════════
-let pickedIdx=-1, pickedDiff=-1;
+let pickedIdx=0, pickedDiff=-1;  // 열무(0)로 고정
 let chars=[], items=[], pops=[];
 let W=0,H=0,GROUND=0;
 let running=false,timeLeft=GAME_SEC;
@@ -269,29 +278,8 @@ let keys={l:false,r:false};
 function rand(){ return Math.random(); }
 
 // ══════════════════════════════════════════════
-// 캐릭터 선택
+// 난이도 선택 (캐릭터는 열무 고정)
 // ══════════════════════════════════════════════
-function pick(i){
-  pickedIdx=i;
-  // getElementById로 명시적으로 접근, setProperty 'important'로 강제 적용
-  const cardIds=['c0','c1','c2'];
-  cardIds.forEach(function(id,j){
-    var el=document.getElementById(id);
-    if(!el) return;
-    var sel=(j===i);
-    if(sel){
-      el.classList.add('sel');
-      el.style.setProperty('opacity','1','important');
-    } else {
-      el.classList.remove('sel');
-      el.style.setProperty('opacity','0.65','important');
-    }
-  });
-  if(!Audio.ctx) Audio.init();
-  Audio.tone(523,.08,'sine',.2);
-  renderSelDiffBtns();
-  checkReady();
-}
 function pickDiff(n){
   pickedDiff=n;
   renderSelDiffBtns();
@@ -299,13 +287,13 @@ function pickDiff(n){
   checkReady();
 }
 function checkReady(){
-  const ok=pickedIdx>=0&&pickedDiff>=1;
+  const ok=pickedDiff>=1;
   document.getElementById('goBtn').classList.toggle('on',ok);
 }
 function renderSelDiffBtns(){
   const wrap=document.getElementById('diffBtns');
-  const name=pickedIdx>=0?CHAR_DEF[pickedIdx].name:null;
-  const won=name?wonLevels(name):[];
+  const name=CHAR_DEF[0].name; // 열무 고정
+  const won=wonLevels(name);
   wrap.innerHTML=Array.from({length:10},(_,i)=>{
     const n=i+1;
     const isWon=won.includes(n);
@@ -334,10 +322,21 @@ renderSelDiffBtns();
 showBests();
 
 // ══════════════════════════════════════════════
+// 전체화면
+// ══════════════════════════════════════════════
+function requestFs(){
+  const el=document.documentElement;
+  try{
+    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════════
 // 게임 시작
 // ══════════════════════════════════════════════
 function startGame(){
-  if(pickedIdx<0) return;
+  requestFs();
   show('game');
 
   const cv=document.getElementById('cv');
@@ -623,12 +622,13 @@ function draw(aiLv){
 }
 
 function drawChar(ch){
+  const sz=ch.isPlayer?Math.round(CHAR_SZ*1.45):CHAR_SZ;
   const bo=ch.bounce*10;
   const y=GROUND-bo;
   ctx.globalAlpha=ch.isPlayer?1:0.38;
 
   // 바구니 호
-  ctx.strokeStyle=ch.color; ctx.lineWidth=4.5;
+  ctx.strokeStyle=ch.color; ctx.lineWidth=ch.isPlayer?5.5:4.5;
   ctx.beginPath();
   ctx.arc(ch.x,y+16,ch.catchW*.82,0,Math.PI);
   ctx.stroke();
@@ -642,20 +642,20 @@ function drawChar(ch){
   ctx.stroke();
 
   // 이모지
-  ctx.font=`${CHAR_SZ}px serif`;
+  ctx.font=`${sz}px serif`;
   ctx.textAlign='center'; ctx.textBaseline='bottom';
   ctx.fillText(ch.icon,ch.x,y);
 
-  // 이름
-  ctx.font=`bold 12px sans-serif`;
+  // 이름 (플레이어: "열무 👤 나")
+  ctx.font=`bold ${ch.isPlayer?15:12}px sans-serif`;
   ctx.textBaseline='top';
   ctx.fillStyle=ch.isPlayer?'#3A7BD5':'#888';
-  ctx.fillText(ch.name+(ch.isPlayer?' 👤':''),ch.x,y+4);
+  ctx.fillText(ch.name+(ch.isPlayer?' 👤 나':''),ch.x,y+4);
 
   // 특징
   ctx.font='10px sans-serif';
   ctx.fillStyle='rgba(0,0,0,.3)';
-  ctx.fillText(ch.trait,ch.x,y-CHAR_SZ-2);
+  ctx.fillText(ch.trait,ch.x,y-sz-2);
   ctx.globalAlpha=1;
 }
 
@@ -724,8 +724,7 @@ function show(id){
   });
 }
 function goSel(){
-  pickedIdx=-1; pickedDiff=-1;
-  document.querySelectorAll('.card').forEach(c=>c.classList.remove('sel'));
+  pickedDiff=-1;
   document.getElementById('goBtn').classList.remove('on');
   renderSelDiffBtns();
   showBests();
